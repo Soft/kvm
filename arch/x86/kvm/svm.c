@@ -2019,6 +2019,12 @@ static void update_bp_intercept(struct kvm_vcpu *vcpu)
 			set_exception_intercept(svm, BP_VECTOR);
 	} else
 		vcpu->guest_debug = 0;
+
+	if (vcpu->kvm->nitro.traps)
+	{
+		set_exception_intercept(vcpu, GP_VECTOR);
+		set_exception_intercept(vcpu, UD_VECTOR);
+	}
 }
 
 static void new_asid(struct vcpu_svm *svm, struct svm_cpu_data *sd)
