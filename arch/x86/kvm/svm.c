@@ -2150,6 +2150,36 @@ static int bp_interception(struct vcpu_svm *svm)
 	return 0;
 }
 
+static int gp_interception(struct vcpu_svm *svm)
+{
+	struct kvm_run *kvm_run = svm->vcpu.run;
+
+	error_code = vmcs_read32(VM_EXIT_INTR_ERROR_CODE);
+	ex_no = intr_info & INTR_INFO_VECTOR_MASK;
+	if (kvm_run->nitro.traps)
+	{
+		if (is_sysenter_sysexit(svm->vcpu))
+		{
+			er = emulate_instruction(svm->vcpu, EMULTYPE_TRAP_UD);
+			if (er != EMULATE_DONE)
+				kvm_queue_exception(svm->vcpu, UD_VECTOR);
+		}
+		else
+		{
+			printk(KERN_INFO "Natural GP\n");
+			kvm_queue_exception_e(svm->vcpu, GP_VECTOR, error_code);
+		}
+		return 1;
+	}
+	else
+	{
+		kvm_run->exit_reason = KVM_EXIT_DEBUG;
+		kvm_run->ex.exception = ex_no;
+		kvm_run->ex.error_code = error_code;
+	}
+
+}
+
 static int ud_interception(struct vcpu_svm *svm)
 {
 	int er;
@@ -4029,6 +4059,7 @@ static int (*const svm_exit_handlers[])(struct vcpu_svm *svm) = {
 	[SVM_EXIT_WRITE_DR7]			= dr_interception,
 	[SVM_EXIT_EXCP_BASE + DB_VECTOR]	= db_interception,
 	[SVM_EXIT_EXCP_BASE + BP_VECTOR]	= bp_interception,
+	[SVM_EXIT_EXCP_BASE + GP_VECTOR]	= gp_interception,
 	[SVM_EXIT_EXCP_BASE + UD_VECTOR]	= ud_interception,
 	[SVM_EXIT_EXCP_BASE + PF_VECTOR]	= pf_interception,
 	[SVM_EXIT_EXCP_BASE + NM_VECTOR]	= nm_interception,
